@@ -1,29 +1,36 @@
 <template>
   <div class="city_body">
     <div class="city_list">
-      <div class="city_hot">
-        <h2>热门城市</h2>
-        <ul class="clearfix">
-          <li
-            v-for="item of hotList"
-            :key="item.id"
-          >{{item.nm}}</li>
-        </ul>
-      </div>
-      <div class="city_sort" ref="citySort">
-        <div
-          v-for="item of cityList"
-          :key="item.id"
-        >
-          <h2>{{item.index}}</h2>
-          <ul>
-            <li
-              v-for="list of item.list"
-              :key="list.id"
-            >{{list.nm}}</li>
-          </ul>
+      <Loading v-if="isLoading" />
+      <Scroll ref="cityList" v-else>
+        <div>
+          <div class="city_hot">
+            <h2>热门城市</h2>
+            <ul class="clearfix">
+              <li
+                v-for="item of hotList"
+                :key="item.id"
+                @tap="handleToCity(item.nm, item.id)"
+              >{{item.nm}}</li>
+            </ul>
+          </div>
+          <div class="city_sort" ref="citySort">
+            <div
+              v-for="item of cityList"
+              :key="item.id"
+            >
+              <h2>{{item.index}}</h2>
+              <ul>
+                <li
+                  v-for="list of item.list"
+                  :key="list.id"
+                  @tap="handleToCity(list.nm, list.id)"
+                >{{list.nm}}</li>
+              </ul>
+            </div>
+          </div>
         </div>
-      </div>
+      </Scroll>
     </div>
     <div class="city_index">
       <ul>
@@ -43,7 +50,8 @@ export default {
   data () {
     return {
       cityList: [],
-      hotList: []
+      hotList: [],
+      isLoading: true
     }
   },
   created () {
@@ -54,12 +62,21 @@ export default {
       this.axios.get('/api/cityList').then((res) => {
         let msg = res.data.msg
         if (msg === 'ok') {
-          let data = res.data.data.cities
-          let { cityList, hotList } = this.formatCityList(data)
+          this.isLoading = false
+          let cities = res.data.data.cities
+          let { cityList, hotList } = this.formatCityList(cities)
           this.cityList = cityList
           this.hotList = hotList
+          localStorage.setItem('cityList', JSON.stringify(cityList))
+          localStorage.setItem('hotList', JSON.stringify(hotList))
         }
       })
+      let cityList = localStorage.getItem('cityList')
+      let hotList = localStorage.getItem('hotList')
+      if (cityList && hotList) {
+        this.cityList = JSON.parse(cityList)
+        this.hotList = JSON.parse(hotList)
+      }
     },
     formatCityList (cities) {
       let cityList = []
@@ -118,7 +135,13 @@ export default {
     },
     handleToIndex (index) {
       let h2 = this.$refs.citySort.getElementsByTagName('h2')
-      this.$refs.citySort.parentNode.scrollTop = h2[index].offsetTop
+      this.$refs.cityList.toScrollTop(-h2[index].offsetTop)
+    },
+    handleToCity (nm, id) {
+      this.$store.commit('city/CITY_INFO', { nm, id })
+      localStorage.setItem('nowNm', nm)
+      localStorage.setItem('nowId', id)
+      this.$router.push('/movie/nowPlaying')
     }
   }
 }

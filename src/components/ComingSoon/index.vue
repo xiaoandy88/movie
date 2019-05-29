@@ -1,27 +1,30 @@
 <template>
   <div class="movie_body">
-    <ul>
-      <li
-        v-for="item of comingList"
-        :key="item.id"
-      >
-        <div class="pic_show">
-          <img :src="item.img | setWH('128.180')">
-        </div>
-        <div class="info_list">
-          <h2>
-            {{item.nm}}
-            <img v-if="item.version" src="@/assets/maxs.png" />
-          </h2>
-          <p><span class="person">{{item.wish}}</span> 人想看</p>
-          <p>{{item.star}}</p>
-          <p>{{item.rt}}上映</p>
-        </div>
-        <div class="btn_pre">
-          预售
-        </div>
-      </li>
-    </ul>
+    <Loading v-if="isLoading" />
+    <Scroll v-else>
+      <ul>
+        <li
+          v-for="item of comingList"
+          :key="item.id"
+        >
+          <div class="pic_show">
+            <img :src="item.img | setWH('128.180')">
+          </div>
+          <div class="info_list">
+            <h2>
+              {{item.nm}}
+              <img v-if="item.version" src="@/assets/maxs.png" />
+            </h2>
+            <p><span class="person">{{item.wish}}</span> 人想看</p>
+            <p>{{item.star}}</p>
+            <p>{{item.rt}}上映</p>
+          </div>
+          <div class="btn_pre">
+            预售
+          </div>
+        </li>
+      </ul>
+    </Scroll>
   </div>
 </template>
 
@@ -30,17 +33,24 @@ export default {
   name: 'ComingSoon',
   data () {
     return {
-      comingList: []
+      comingList: [],
+      isLoading: true,
+      prevCityId: -1
     }
   },
-  created () {
+  activated () {
     this.getComingList()
   },
   methods: {
     getComingList () {
-      this.axios.get('/api/movieComingList?cityId=10').then((res) => {
+      let cityId = this.$store.state.city.id
+      if (this.prevCityId === cityId) return
+      this.isLoading = true
+      this.axios.get('/api/movieComingList?cityId=' + cityId).then((res) => {
         if (res.data.msg === 'ok') {
           this.comingList = res.data.data.comingList
+          this.isLoading = false
+          this.prevCityId = cityId
         }
       })
     }
